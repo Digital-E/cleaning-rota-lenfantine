@@ -410,7 +410,7 @@ export default function CleaningRota() {
             <p style={{
               fontSize: 13, fontWeight: 600, textTransform: "uppercase",
               color: "#8E8E93", marginBottom: 4, letterSpacing: 0.5
-            }}>Ménage Coloc</p>
+            }}>Ménage L'Enfantine</p>
             <h1 style={{
               fontSize: 40, fontWeight: 700, color: "#FFF",
               margin: 0, letterSpacing: -0.5,
