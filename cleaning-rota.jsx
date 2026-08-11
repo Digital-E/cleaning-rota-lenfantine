@@ -1,24 +1,30 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { AREAS, DIFFICULTY, generateBaseSchedule, redistributeChores } from "./lib/schedule.js";
 
-const FLATMATES_DEFAULT = ["Coloc 1", "Coloc 2", "Coloc 3", "Coloc 4", "Coloc 5"];
+const FLATMATES_DEFAULT = ["Hannah", "Mikail", "Patxi", "Hélène", "Shelly", "Lara"];
 
 const AREA_COLORS = {
-  "Cuisine":       { bg: "rgba(255, 45, 85, 0.15)", border: "rgba(255, 45, 85, 0.3)", text: "#FF375F", accent: "#FF375F" },
-  "Salle de bain": { bg: "rgba(160, 255, 3, 0.15)", border: "rgba(160, 255, 3, 0.3)", text: "#A0FF03", accent: "#A0FF03" },
-  "Toilettes/Entrée":     { bg: "rgba(100, 210, 255, 0.15)", border: "rgba(100, 210, 255, 0.3)", text: "#64D2FF", accent: "#64D2FF" },
-  "Salon/Véranda":         { bg: "rgba(255, 159, 10, 0.15)", border: "rgba(255, 159, 10, 0.3)", text: "#FF9F0A", accent: "#FF9F0A" },
+  "Cuisine":            { bg: "rgba(255, 45, 85, 0.15)", border: "rgba(255, 45, 85, 0.3)", text: "#FF375F", accent: "#FF375F" },
+  "Toilettes":          { bg: "rgba(100, 210, 255, 0.15)", border: "rgba(100, 210, 255, 0.3)", text: "#64D2FF", accent: "#64D2FF" },
+  "Salle à manger":     { bg: "rgba(255, 159, 10, 0.15)", border: "rgba(255, 159, 10, 0.3)", text: "#FF9F0A", accent: "#FF9F0A" },
+  "Communs":            { bg: "rgba(160, 255, 3, 0.15)", border: "rgba(160, 255, 3, 0.3)", text: "#A0FF03", accent: "#A0FF03" },
+  "Salle sérigraphie":  { bg: "rgba(199, 125, 255, 0.15)", border: "rgba(199, 125, 255, 0.3)", text: "#C77DFF", accent: "#C77DFF" },
+  "Salle bois":         { bg: "rgba(200, 152, 48, 0.15)", border: "rgba(200, 152, 48, 0.3)", text: "#C89830", accent: "#C89830" },
+  "Poubelles":          { bg: "rgba(143, 163, 30, 0.15)", border: "rgba(143, 163, 30, 0.3)", text: "#8FA31E", accent: "#8FA31E" },
 };
 const BREAK_STYLE =  { bg: "rgba(191, 90, 242, 0.15)", border: "rgba(191, 90, 242, 0.3)", text: "#BF5AF2", accent: "#BF5AF2" }; // Purple
 const ABSENT_STYLE = { bg: "#2C2C2E", border: "#3A3A3C", text: "#98989D", accent: "#8E8E93" }; // System Grey
 const EXTRA_STYLE =  { bg: "rgba(255, 214, 10, 0.15)", border: "rgba(255, 214, 10, 0.3)", text: "#FFD60A", accent: "#FFD60A" }; // Yellow
 
 const AREA_ICONS = {
-  "Cuisine":       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
-  "Salle de bain": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-1C5.5 2.5 5 3 5 4v2"/><path d="M7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-3.3c0-.8-.5-1.5-1.2-1.8l-1.6-.7c-.7-.3-1.2-1-1.2-1.8V9c0-1.7-1.3-3-3-3H9Z"/></svg>,
-  "Toilettes/Entrée":     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 19v2"/><path d="M18 19v2"/><path d="M3 13h18c.6 0 1 .4 1 1v2c0 1.7-1.3 3-3 3H5c-1.7 0-3-1.3-3-3v-2c0-.6.4-1 1-1Z"/><path d="M7 13V8c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v5"/><line x1="12" y1="3" x2="12" y2="5"/></svg>,
-  "Salon/Véranda":         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9Z"/><path d="M4 13v7"/><path d="M20 13v7"/></svg>,
-  "Pause":         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+  "Cuisine":            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
+  "Toilettes":          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 19v2"/><path d="M18 19v2"/><path d="M3 13h18c.6 0 1 .4 1 1v2c0 1.7-1.3 3-3 3H5c-1.7 0-3-1.3-3-3v-2c0-.6.4-1 1-1Z"/><path d="M7 13V8c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v5"/><line x1="12" y1="3" x2="12" y2="5"/></svg>,
+  "Salle à manger":     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="3" rx="1"/><line x1="6" y1="11" x2="6" y2="19"/><line x1="18" y1="11" x2="18" y2="19"/></svg>,
+  "Communs":            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9Z"/><path d="M4 13v7"/><path d="M20 13v7"/></svg>,
+  "Salle sérigraphie":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-4 4-2-2-5 5"/></svg>,
+  "Salle bois":         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="9" width="18" height="6" rx="1"/><line x1="7" y1="9" x2="7" y2="15"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="17" y1="9" x2="17" y2="15"/></svg>,
+  "Poubelles":          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+  "Pause":              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
 };
 const CHORES = {
   "Cuisine": [
@@ -28,35 +34,56 @@ const CHORES = {
     "Récurer l'évier",
     "Balayer et laver le sol",
     "Vider la poubelle et changer le sac",
-    "Vider poubelles de tri sélectif",
     "Vérifier stocks produits ménagers et faire une liste de courses si besoin",
     "Essuyer l'extérieur du frigo",
-    "Sortir poubelle noire le lundi soir (collecte mardi matin)",
-    "Sortir poubelle verte le mardi soir (collecte lundi matin)",
   ],
-  "Salle de bain": [
-    "Récurer la douche / baignoire",
-    "Nettoyer le lavabo et le robinet",
-    "Dégivrer le miroir",
-    "Laver le sol",
-    "Vider la poubelle",
-    "Nettoyer la bonde et enlever les cheveux",
-    "Arrosser les plantes",
-  ],
-  "Toilettes/Entrée": [
+  "Toilettes": [
     "Nettoyer la cuvette, la lunette et l'abattant",
     "Laver le sol des toilettes",
+    "Nettoyer le lavabo et le robinet",
+    "Essuyer le miroir",
     "Balayer et laver le sol de l'entrée",
-    "Ranger les chaussures",
+    "Vider la poubelle",
     "Essuyer les interrupteurs et poignées de porte",
   ],
-  "Salon/Véranda": [
+  "Salle à manger": [
+    "Nettoyer les tables",
+    "Balayer et laver le sol",
+    "Dépoussiérer les surfaces et rebords",
+    "Ranger les chaises",
+    "Vider la poubelle",
+    "Nettoyer les vitres si besoin",
+  ],
+  "Communs": [
     "Passer l'aspirateur",
     "Dépoussiérer les surfaces et meubles",
-    "Nettoyer les vitres et portes-fenêtres",
+    "Nettoyer les vitres et portes",
     "Ranger et désencombrer",
     "Laver le sol",
-    "Arroser les plantes"
+    "Arroser les plantes",
+  ],
+  "Salle sérigraphie": [
+    "Nettoyer les tables et plans de travail",
+    "Rincer et ranger les écrans et racles",
+    "Essuyer les résidus d'encre",
+    "Balayer et laver le sol",
+    "Vérifier et ranger les produits chimiques",
+    "Vider la poubelle",
+  ],
+  "Salle bois": [
+    "Balayer la sciure et les copeaux",
+    "Passer l'aspirateur sur les machines",
+    "Ranger les outils à leur place",
+    "Nettoyer les établis",
+    "Vérifier et ranger les chutes de bois",
+    "Vider la poubelle",
+  ],
+  "Poubelles": [
+    "Vider toutes les poubelles des salles communes",
+    "Trier et sortir les poubelles de tri sélectif",
+    "Changer les sacs poubelle",
+    "Sortir les poubelles le soir de collecte",
+    "Nettoyer les containers si besoin",
   ],
 };
 
@@ -278,7 +305,9 @@ export default function CleaningRota() {
   }, [names, cycleCount, absences, startDate, saveState]);
 
   const baseSchedule = useMemo(() => generateBaseSchedule(names, cycleCount), [names, cycleCount]);
-  const totalWeeks = cycleCount * 5;
+  const weeksPerCycle = names.length;
+  const totalWeeks = cycleCount * weeksPerCycle;
+  const pauseWeeksPerCycle = Math.max(0, names.length - AREAS.length);
 
   const getEffective = useCallback((weekIdx) => {
     const base = baseSchedule[weekIdx];
@@ -349,8 +378,8 @@ export default function CleaningRota() {
     return AREA_COLORS[area] || { bg: "#1C1C1E", border: "#2C2C2E", text: "#8E8E93", accent: "#8E8E93" };
   };
 
-  const cycleNumber = Math.floor(currentWeek / 5) + 1;
-  const weekInCycle = (currentWeek % 5) + 1;
+  const cycleNumber = Math.floor(currentWeek / weeksPerCycle) + 1;
+  const weekInCycle = (currentWeek % weeksPerCycle) + 1;
   const allAbsentCandidates = names;
   const accentColor = "#0A84FF"; // Apple System Blue for interactions
 
@@ -387,7 +416,7 @@ export default function CleaningRota() {
               margin: 0, letterSpacing: -0.5,
             }}>Le Planning</h1>
             <p style={{ fontSize: 15, color: "#8E8E93", marginTop: 6, fontWeight: 400 }}>
-              5 colocs · 4 zones · Rotation équitable
+              {names.length} colocs · {AREAS.length} zones · Rotation équitable
             </p>
           </div>
 
@@ -522,7 +551,7 @@ export default function CleaningRota() {
               <div style={{
                 fontSize: 12, color: "#FF9F0A", textTransform: "uppercase",
                 marginTop: 6, fontWeight: 600, letterSpacing: 0.5
-              }}>Cycle {cycleNumber} · Semaine {weekInCycle} / 5</div>
+              }}>Cycle {cycleNumber} · Semaine {weekInCycle} / {weeksPerCycle}</div>
               <div style={{
                 fontSize: 15, color: "#8E8E93",
                 marginTop: 4, fontWeight: 400
@@ -717,8 +746,8 @@ export default function CleaningRota() {
                   }}>
                     {(() => {
                       const present = names.filter(n => !currentAbsent.includes(n)).length;
-                      const coverable = Math.min(present, 4);
-                      const skipped = 4 - coverable;
+                      const coverable = Math.min(present, AREAS.length);
+                      const skipped = AREAS.length - coverable;
                       return `${currentAbsent.length} absents · ${present} présents · ${coverable} zone${coverable !== 1 ? "s" : ""} couvertes${skipped > 0 ? ` · ${skipped} sautées` : ""}`;
                     })()}
                   </div>
@@ -740,7 +769,7 @@ export default function CleaningRota() {
                 <div>
                   <span style={{ fontSize: 11, color: "#8E8E93", fontWeight: 600, textTransform: "uppercase" }}>Registre d'Équité</span>
                   {showLedger && <p style={{ fontSize: 12, color: "#636366", margin: "5px 0 0" }}>
-                    Cuisine ★★★★ · Salle de bain ★★★ · Toilettes/Entrée ★★ · Salon/Véranda ★
+                    {AREAS.map(a => `${a} ${"★".repeat(DIFFICULTY[a])}`).join(" · ")}
                   </p>}
                 </div>
                 <span style={{ fontSize: 12, color: "#636366" }}>{showLedger ? "▲" : "▼"}</span>
@@ -827,7 +856,7 @@ export default function CleaningRota() {
               <tbody>
                 {baseSchedule.map((_, weekIdx) => {
                   const { assignments: wa, redistribution: rd } = getEffective(weekIdx);
-                  const isCycleBoundary = weekIdx > 0 && weekIdx % 5 === 0;
+                  const isCycleBoundary = weekIdx > 0 && weekIdx % weeksPerCycle === 0;
                   const isCurrentRow = weekIdx === currentWeek;
                   const weekAbsent = absences[weekIdx] || [];
                   const hasAbsence = weekAbsent.length > 0;
@@ -903,7 +932,7 @@ export default function CleaningRota() {
             {[2, 4, 6, 8].map(n => (
               <button key={n}
                 className={`rota-cycle-btn${cycleCount === n ? " active" : ""}`}
-                onClick={() => { setCycleCount(n); setCurrentWeek(Math.min(currentWeek, n * 5 - 1)); }}
+                onClick={() => { setCycleCount(n); setCurrentWeek(Math.min(currentWeek, n * weeksPerCycle - 1)); }}
                 style={{
                   background: cycleCount === n ? "#FFF" : "#1C1C1E",
                   color: cycleCount === n ? "#000" : "#8E8E93",
@@ -920,7 +949,7 @@ export default function CleaningRota() {
             textAlign: "center", fontSize: 13, color: "#636366",
             marginTop: 40, lineHeight: 1.6, maxWidth: 600, marginInline: "auto"
           }}>
-            Chaque cycle de 5 semaines : chacun fait toutes les zones et a une semaine de pause.<br />
+            Chaque cycle de {weeksPerCycle} semaines : chacun fait toutes les zones{pauseWeeksPerCycle > 0 ? ` et a ${pauseWeeksPerCycle > 1 ? `${pauseWeeksPerCycle} semaines de pause` : "une semaine de pause"}` : ""}.<br />
             Les absences redistribuent les tâches — les zones prioritaires restent couvertes.<br />
             Le registre d'équité suit la charge supplémentaire via les points de difficulté.
           </p>

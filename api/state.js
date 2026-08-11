@@ -8,7 +8,7 @@ const kv = new Redis({
 });
 
 const DEFAULTS = {
-  names: ["Coloc 1", "Coloc 2", "Coloc 3", "Coloc 4", "Coloc 5"],
+  names: ["Hannah", "Mikail", "Patxi", "Hélène", "Shelly", "Lara"],
   cycleCount: 4,
   absences: {},
   startDate: null,
@@ -244,8 +244,9 @@ async function doSync({ names, cycleCount, absences, startDate }) {
       return;
     }
 
-    const cycleNumber = Math.floor(weekIdx / 5) + 1;
-    const weekInCycle = (weekIdx % 5) + 1;
+    const weeksPerCycle = names.length;
+    const cycleNumber = Math.floor(weekIdx / weeksPerCycle) + 1;
+    const weekInCycle = (weekIdx % weeksPerCycle) + 1;
 
     const assignedMap = {};
     names.forEach(name => {
@@ -268,7 +269,7 @@ async function doSync({ names, cycleCount, absences, startDate }) {
     const descriptionLines = AREAS.map(area => assignedMap[area] ? `${area}: ${assignedMap[area]}` : null).filter(Boolean);
     const resource = {
       summary: `🧹🧼🫧 Ménage Semaine du ${fmt(monDate)} au ${fmt(sunDate)}`,
-      description: `Cycle ${cycleNumber} · Semaine ${weekInCycle} sur 5\n\n${descriptionLines.join("\n")}`,
+      description: `Cycle ${cycleNumber} · Semaine ${weekInCycle} sur ${weeksPerCycle}\n\n${descriptionLines.join("\n")}`,
       start: { dateTime: `${weekMondayStr}T09:00:00`, timeZone: "Europe/London" },
       end:   { dateTime: `${weekMondayStr}T10:00:00`, timeZone: "Europe/London" },
       extendedProperties: { private: { source: "cleaningrota" } },
