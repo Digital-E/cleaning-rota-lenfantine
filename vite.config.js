@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
   proxy: {
     "/api": {
-      target: "https://cleaningrota-five.vercel.app",
+      target: "https://cleaning-rota-lenfantine.vercel.app",
       changeOrigin: true,
     },
   },
