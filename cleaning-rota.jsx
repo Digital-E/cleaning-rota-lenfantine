@@ -4,86 +4,53 @@ import { AREAS, DIFFICULTY, generateBaseSchedule, redistributeChores } from "./l
 const FLATMATES_DEFAULT = ["Hannah", "Mikail", "Patxi", "Hélène", "Shelly", "Lara"];
 
 const AREA_COLORS = {
-  "Cuisine":            { bg: "rgba(255, 45, 85, 0.15)", border: "rgba(255, 45, 85, 0.3)", text: "#FF375F", accent: "#FF375F" },
-  "Toilettes":          { bg: "rgba(100, 210, 255, 0.15)", border: "rgba(100, 210, 255, 0.3)", text: "#64D2FF", accent: "#64D2FF" },
-  "Salle à manger":     { bg: "rgba(255, 159, 10, 0.15)", border: "rgba(255, 159, 10, 0.3)", text: "#FF9F0A", accent: "#FF9F0A" },
-  "Communs":            { bg: "rgba(160, 255, 3, 0.15)", border: "rgba(160, 255, 3, 0.3)", text: "#A0FF03", accent: "#A0FF03" },
-  "Salle sérigraphie":  { bg: "rgba(199, 125, 255, 0.15)", border: "rgba(199, 125, 255, 0.3)", text: "#C77DFF", accent: "#C77DFF" },
-  "Salle bois":         { bg: "rgba(200, 152, 48, 0.15)", border: "rgba(200, 152, 48, 0.3)", text: "#C89830", accent: "#C89830" },
-  "Poubelles":          { bg: "rgba(143, 163, 30, 0.15)", border: "rgba(143, 163, 30, 0.3)", text: "#8FA31E", accent: "#8FA31E" },
+  "Cuisine":              { bg: "rgba(255, 45, 85, 0.15)", border: "rgba(255, 45, 85, 0.3)", text: "#FF375F", accent: "#FF375F" },
+  "WC Droite":            { bg: "rgba(100, 210, 255, 0.15)", border: "rgba(100, 210, 255, 0.3)", text: "#64D2FF", accent: "#64D2FF" },
+  "WC Gauche":            { bg: "rgba(90, 170, 255, 0.15)", border: "rgba(90, 170, 255, 0.3)", text: "#5AAAFF", accent: "#5AAAFF" },
+  "Salle à manger":       { bg: "rgba(255, 159, 10, 0.15)", border: "rgba(255, 159, 10, 0.3)", text: "#FF9F0A", accent: "#FF9F0A" },
+  "Poubelles & Produits": { bg: "rgba(143, 163, 30, 0.15)", border: "rgba(143, 163, 30, 0.3)", text: "#8FA31E", accent: "#8FA31E" },
 };
 const BREAK_STYLE =  { bg: "rgba(191, 90, 242, 0.15)", border: "rgba(191, 90, 242, 0.3)", text: "#BF5AF2", accent: "#BF5AF2" }; // Purple
 const ABSENT_STYLE = { bg: "#2C2C2E", border: "#3A3A3C", text: "#98989D", accent: "#8E8E93" }; // System Grey
 const EXTRA_STYLE =  { bg: "rgba(255, 214, 10, 0.15)", border: "rgba(255, 214, 10, 0.3)", text: "#FFD60A", accent: "#FFD60A" }; // Yellow
 
+const WC_ICON = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 19v2"/><path d="M18 19v2"/><path d="M3 13h18c.6 0 1 .4 1 1v2c0 1.7-1.3 3-3 3H5c-1.7 0-3-1.3-3-3v-2c0-.6.4-1 1-1Z"/><path d="M7 13V8c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v5"/><line x1="12" y1="3" x2="12" y2="5"/></svg>;
 const AREA_ICONS = {
-  "Cuisine":            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
-  "Toilettes":          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 19v2"/><path d="M18 19v2"/><path d="M3 13h18c.6 0 1 .4 1 1v2c0 1.7-1.3 3-3 3H5c-1.7 0-3-1.3-3-3v-2c0-.6.4-1 1-1Z"/><path d="M7 13V8c0-1.7 1.3-3 3-3h4c1.7 0 3 1.3 3 3v5"/><line x1="12" y1="3" x2="12" y2="5"/></svg>,
-  "Salle à manger":     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="3" rx="1"/><line x1="6" y1="11" x2="6" y2="19"/><line x1="18" y1="11" x2="18" y2="19"/></svg>,
-  "Communs":            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 9a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9Z"/><path d="M4 13v7"/><path d="M20 13v7"/></svg>,
-  "Salle sérigraphie":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5-4 4-2-2-5 5"/></svg>,
-  "Salle bois":         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="9" width="18" height="6" rx="1"/><line x1="7" y1="9" x2="7" y2="15"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="17" y1="9" x2="17" y2="15"/></svg>,
-  "Poubelles":          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
-  "Pause":              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+  "Cuisine":              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
+  "WC Droite":            WC_ICON,
+  "WC Gauche":            WC_ICON,
+  "Salle à manger":       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="3" rx="1"/><line x1="6" y1="11" x2="6" y2="19"/><line x1="18" y1="11" x2="18" y2="19"/></svg>,
+  "Poubelles & Produits": <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+  "Pause":                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
 };
+const WC_CHORES = [
+  "Nettoyer l'intérieur des WC à la brosse avec du produit",
+  "Nettoyer la cuvette au-dessus et en dessous",
+  "Nettoyer l'endroit où se trouve la chasse d'eau",
+  "Passer un coup de serpillère sur le sol des WC + hall lavabo",
+  "Passer un coup sur le lavabo avec du produit",
+  "Ranger/jeter les rouleaux de PQ et compagnie",
+];
 const CHORES = {
   "Cuisine": [
-    "Nettoyer les plans de travail",
-    "Dégraisser la cuisinière et les plaques",
-    "Nettoyer le micro-ondes (intérieur)",
-    "Récurer l'évier",
-    "Balayer et laver le sol",
-    "Vider la poubelle et changer le sac",
-    "Vérifier stocks produits ménagers et faire une liste de courses si besoin",
-    "Essuyer l'extérieur du frigo",
+    "Nettoyer tout l'évier avec du produit",
+    "Nettoyer le frigo avec du produit",
+    "Vérifier s'il n'y a rien de pourri — si oui, prévenir les personnes concernées",
+    "Vérifier si les machines à café sont vidées, nettoyer si besoin",
   ],
-  "Toilettes": [
-    "Nettoyer la cuvette, la lunette et l'abattant",
-    "Laver le sol des toilettes",
-    "Nettoyer le lavabo et le robinet",
-    "Essuyer le miroir",
-    "Balayer et laver le sol de l'entrée",
-    "Vider la poubelle",
-    "Essuyer les interrupteurs et poignées de porte",
-  ],
+  "WC Droite": WC_CHORES,
+  "WC Gauche": WC_CHORES,
   "Salle à manger": [
-    "Nettoyer les tables",
-    "Balayer et laver le sol",
-    "Dépoussiérer les surfaces et rebords",
-    "Ranger les chaises",
-    "Vider la poubelle",
-    "Nettoyer les vitres si besoin",
+    "Nettoyer l'intérieur et l'extérieur des électroménagers (four, micro-ondes, plaques)",
+    "Nettoyer au produit les surfaces où on mange",
+    "Nettoyer au produit les surfaces où sont posés les électroménagers",
+    "Bien ranger les chaises",
   ],
-  "Communs": [
-    "Passer l'aspirateur",
-    "Dépoussiérer les surfaces et meubles",
-    "Nettoyer les vitres et portes",
-    "Ranger et désencombrer",
-    "Laver le sol",
-    "Arroser les plantes",
-  ],
-  "Salle sérigraphie": [
-    "Nettoyer les tables et plans de travail",
-    "Rincer et ranger les écrans et racles",
-    "Essuyer les résidus d'encre",
-    "Balayer et laver le sol",
-    "Vérifier et ranger les produits chimiques",
-    "Vider la poubelle",
-  ],
-  "Salle bois": [
-    "Balayer la sciure et les copeaux",
-    "Passer l'aspirateur sur les machines",
-    "Ranger les outils à leur place",
-    "Nettoyer les établis",
-    "Vérifier et ranger les chutes de bois",
-    "Vider la poubelle",
-  ],
-  "Poubelles": [
-    "Vider toutes les poubelles des salles communes",
-    "Trier et sortir les poubelles de tri sélectif",
-    "Changer les sacs poubelle",
-    "Sortir les poubelles le soir de collecte",
-    "Nettoyer les containers si besoin",
+  "Poubelles & Produits": [
+    "Vérifier qu'il ne manque pas de produits/éponges/PQ… si besoin, aller les acheter",
+    "Rappeler aux résidents de déposer leur poubelle dans la poubelle commune le dernier jour avant le lundi",
+    "Rappeler qu'il faut sortir les poubelles le lundi soir",
+    "Sortir les poubelles le lundi soir si on est présent",
   ],
 };
 
@@ -224,6 +191,7 @@ export default function CleaningRota() {
   const [absences, setAbsences] = useState({});
   const [absenceMode, setAbsenceMode] = useState(false);
   const [startDate, setStartDate] = useState(null);
+  const [grandMenageAck, setGrandMenageAck] = useState({});
   const [syncStatus, setSyncStatus] = useState("idle"); // "idle" | "saving" | "saved" | "error"
   const [syncErrorMsg, setSyncErrorMsg] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -240,6 +208,7 @@ export default function CleaningRota() {
         if (data.names) setNames(data.names);
         if (data.cycleCount) setCycleCount(data.cycleCount);
         if (data.absences) setAbsences(data.absences);
+        if (data.grandMenageAck) setGrandMenageAck(data.grandMenageAck);
         const sd = data.startDate || new Date().toISOString().split("T")[0];
         setStartDate(sd);
         // Jump to current week on load
@@ -260,12 +229,12 @@ export default function CleaningRota() {
     return fetch("/api/state", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ names: overrideNames, cycleCount, absences, startDate }),
+      body: JSON.stringify({ names: overrideNames, cycleCount, absences, startDate, grandMenageAck }),
     })
       .then(async (r) => {
         const data = await r.json().catch(() => ({}));
         if (!r.ok) throw new Error(data.error || `Erreur serveur HTTP ${r.status}`);
-        
+
         if (data.syncError) {
           setSyncStatus("error");
           setSyncErrorMsg(data.syncError);
@@ -277,7 +246,7 @@ export default function CleaningRota() {
         setSyncStatus("error");
         setSyncErrorMsg(err.message);
       });
-  }, [names, cycleCount, absences, startDate]);
+  }, [names, cycleCount, absences, startDate, grandMenageAck]);
 
   const resetAll = () => {
     setSyncStatus("saving");
@@ -288,6 +257,7 @@ export default function CleaningRota() {
         setNames([...FLATMATES_DEFAULT]);
         setCycleCount(4);
         setAbsences({});
+        setGrandMenageAck({});
         setCurrentWeek(0);
         setAbsenceMode(false);
         setConfirmReset(false);
@@ -302,7 +272,18 @@ export default function CleaningRota() {
     setSyncStatus("saving");
     const t = setTimeout(() => saveState(), 2000);
     return () => clearTimeout(t);
-  }, [names, cycleCount, absences, startDate, saveState]);
+  }, [names, cycleCount, absences, startDate, grandMenageAck, saveState]);
+
+  // Quarterly reminder to fix a date for the collective "grand ménage"
+  const grandMenageQuarter = useMemo(() => {
+    if (!startDate) return 0;
+    const start = new Date(`${startDate}T00:00:00`);
+    const now = new Date();
+    const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+    return Math.max(0, Math.floor(months / 3));
+  }, [startDate]);
+  const grandMenageDue = startDate && !grandMenageAck[grandMenageQuarter];
+  const ackGrandMenage = () => setGrandMenageAck(prev => ({ ...prev, [grandMenageQuarter]: true }));
 
   const baseSchedule = useMemo(() => generateBaseSchedule(names, cycleCount), [names, cycleCount]);
   const weeksPerCycle = names.length;
@@ -446,6 +427,32 @@ export default function CleaningRota() {
               {syncStatus === "error"  && <span style={{ color: "#FF453A" }}>{syncErrorMsg ? `échec: ${syncErrorMsg}` : "échec de la synchronisation"}</span>}
             </div>
           </div>
+
+          {/* Grand Ménage Quarterly Reminder */}
+          {grandMenageDue && (
+            <div style={{
+              background: "rgba(191, 90, 242, 0.1)",
+              borderLeft: "4px solid #BF5AF2",
+              borderRadius: 10, padding: "14px 20px", marginBottom: 28,
+              display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
+            }}>
+              <div>
+                <div style={{
+                  fontSize: 11, color: "#BF5AF2", fontWeight: 600,
+                  textTransform: "uppercase", marginBottom: 4,
+                }}>Rappel trimestriel</div>
+                <div style={{ fontSize: 13, color: "#D1D1D6", lineHeight: 1.5 }}>
+                  Pensez à fixer une date pour faire le grand ménage tous ensemble.
+                </div>
+              </div>
+              <button className="rota-action-btn" onClick={ackGrandMenage} style={{
+                background: "#2C2C2E", border: "none",
+                borderRadius: 14, padding: "4px 12px", cursor: "pointer",
+                fontSize: 11, color: "#BF5AF2", fontWeight: 600,
+                whiteSpace: "nowrap", transition: "all 0.15s",
+              }}>Date fixée ✓</button>
+            </div>
+          )}
 
           {/* Area Legend */}
           <div style={{ marginBottom: 32 }}>

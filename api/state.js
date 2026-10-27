@@ -12,6 +12,7 @@ const DEFAULTS = {
   cycleCount: 4,
   absences: {},
   startDate: null,
+  grandMenageAck: {},
 };
 
 // Format a UTC date as YYYY-MM-DD without timezone drift
@@ -311,10 +312,10 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { names, cycleCount, absences, startDate } = req.body;
-    
+    const { names, cycleCount, absences, startDate, grandMenageAck } = req.body;
+
     try {
-      await kv.set("rota", { names, cycleCount, absences, startDate });
+      await kv.set("rota", { names, cycleCount, absences, startDate, grandMenageAck });
     } catch (err) {
       return res.status(500).json({ error: "Erreur Redis (Vérifiez vos variables Upstash)" });
     }
