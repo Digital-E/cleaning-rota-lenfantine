@@ -38,6 +38,28 @@ function getMonday(dateStr) {
   return formatUTCDate(d);
 }
 
+// Add calendar months to a UTC date without timezone drift
+function addMonths(dateStr, months) {
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return formatUTCDate(d);
+}
+
+// The next upcoming quarterly "grand ménage" reminder date — the first
+// startDate + 3*k months that hasn't passed yet, so it rolls forward on its
+// own as each sync runs after a previous reminder date goes by.
+function nextGrandMenageDate(startDate) {
+  const start = getMonday(startDate);
+  const today = formatUTCDate(new Date());
+  let k = 3;
+  let candidate = addMonths(start, k);
+  while (candidate < today) {
+    k += 3;
+    candidate = addMonths(start, k);
+  }
+  return candidate;
+}
+
 async function syncCalendar() {
   // Signal that a sync is needed
   await kv.set("rota:sync-needed", "1");
@@ -209,7 +231,9 @@ async function doSync({ names, cycleCount, absences, startDate }) {
   const existingMap = new Map();
   existingEvents.forEach(e => {
     const date = (e.start.dateTime || e.start.date || "").split("T")[0];
-    if (e.summary === "Cleaning Rota" || (e.summary && e.summary.startsWith("🧹🧼🫧 Ménage Semaine"))) {
+    if (e.extendedProperties?.private?.kind === "grandmenage") {
+      existingMap.set("GRANDMENAGE", e);
+    } else if (e.summary === "Cleaning Rota" || (e.summary && e.summary.startsWith("🧹🧼🫧 Ménage Semaine"))) {
       existingMap.set(`${date}_ALL`, e);
     } else {
       const name = (e.summary || "").split(" — ")[1];
@@ -288,6 +312,27 @@ async function doSync({ names, cycleCount, absences, startDate }) {
       requests.push({ method: "POST", url: `/calendar/v3/calendars/${encodedId}/events`, body: resource });
     }
   });
+
+  // 2b. Quarterly "grand ménage" reminder — a single all-day event that
+  // rolls forward to the next due date each time this syncs.
+  const gmDate = nextGrandMenageDate(startDate);
+  const gmResource = {
+    summary: "🧼 Rappel trimestriel — Grand ménage",
+    description: "Pensez à fixer une date pour faire le grand ménage tous ensemble (rappel tous les 3 mois).",
+    start: { date: gmDate },
+    end: { date: addDays(gmDate, 1) },
+    extendedProperties: { private: { source: "cleaningrota", kind: "grandmenage" } },
+  };
+  const existingGm = existingMap.get("GRANDMENAGE");
+  if (existingGm) {
+    matchedIds.add(existingGm.id);
+    const existingGmDate = (existingGm.start.date || existingGm.start.dateTime || "").split("T")[0];
+    if (existingGmDate !== gmDate) {
+      requests.push({ method: "PATCH", url: `/calendar/v3/calendars/${encodedId}/events/${existingGm.id}`, body: gmResource });
+    }
+  } else {
+    requests.push({ method: "POST", url: `/calendar/v3/calendars/${encodedId}/events`, body: gmResource });
+  }
 
   // 3. Delete leftover events that weren't matched in the new schedule
   existingEvents.forEach(e => {
