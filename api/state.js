@@ -247,11 +247,11 @@ async function doSync({ names, cycleCount, absences, startDate }) {
   const encodedId = encodeURIComponent(calendarId);
   const matchedIds = new Set();
 
-  // Define sync window: Today minus 1 day -> Today + 29 days (approx 4 weeks)
+  // Define sync window: Today minus 7 days -> Today + 90 days (approx 3 months)
   const now = new Date();
   const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const windowEnd = new Date(windowStart);
-  windowEnd.setUTCDate(windowEnd.getUTCDate() + 30);
+  windowEnd.setUTCDate(windowEnd.getUTCDate() + 90);
   windowStart.setUTCDate(windowStart.getUTCDate() - 7);
 
   baseSchedule.forEach((weekAssignments, weekIdx) => {
@@ -262,7 +262,7 @@ async function doSync({ names, cycleCount, absences, startDate }) {
 
     const weekMondayStr = getMonday(addDays(startDate, weekIdx * 7));
 
-    // Filter: Only sync events within the next 4 weeks
+    // Filter: Only sync events within the next ~3 months
     const eventDate = new Date(`${weekMondayStr}T00:00:00Z`);
     if (eventDate < windowStart || eventDate > windowEnd) {
       console.log(`Skipping week ${weekIdx + 1} (${weekMondayStr}) — outside 4-week window.`);
